@@ -1,125 +1,166 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CamBond</title>
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#080d12;color:white;
- font-family:Arial,sans-serif;padding:25px 20px;
-}
-header{display:flex;align-items:center;gap:12px}
-.logo{
- width:46px;height:46px;border-radius:14px;
- background:#153c32;color:#48e6a5;
- display:grid;place-items:center;font-size:25px;
-}
-h1{font-size:25px;margin:0}
-small{color:#8c9b9a}
-.hero{
- margin-top:35px;padding:25px 20px;
- border-radius:22px;
- background:linear-gradient(145deg,#173c32,#10221f);
-}
-.hero h2{font-size:27px;margin:0 0 12px}
-.hero p{color:#b7c8c1;line-height:1.6}
-.card{
- background:#141d24;border:1px solid #26343c;
- border-radius:18px;padding:20px;margin-top:18px;
-}
-.card h3{margin:0 0 10px}
-button{
- border:0;border-radius:12px;padding:15px;
- width:100%;font-size:16px;font-weight:bold;
- background:#42e6a5;color:#092017;
- margin-top:12px;
-}
-.secondary{background:#26343c;color:white}
-.status{color:#42e6a5;font-size:13px}
-video{
- width:100%;margin-top:15px;border-radius:12px;
- background:#050505;display:none;
-}
-footer{text-align:center;color:#71817f;margin-top:35px;font-size:12px}
+body{margin:0;background:#10131d;color:#fff;font-family:Arial,sans-serif;padding:22px}
+.container{max-width:480px;margin:auto}
+h1{text-align:center;color:#65e6c2;font-size:34px}
+.sub{text-align:center;color:#aab3c5}
+.card{background:#1c2231;padding:18px;border-radius:16px;margin:18px 0}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#65e6c2;color:#10131d;font-weight:bold;font-size:16px;margin-top:10px}
+input{width:100%;padding:14px;border-radius:9px;border:1px solid #46516a;background:#10131d;color:white;margin-top:10px}
+video{width:100%;background:#080a10;border-radius:12px;margin-top:12px}
+.status{color:#65e6c2;text-align:center;min-height:24px}
+.small{font-size:12px;color:#aab3c5;line-height:1.5}
 </style>
 </head>
 <body>
+<div class="container">
+<h1>CamBond</h1>
+<p class="sub">Secure Live Camera Sharing</p>
 
-<header>
- <div class="logo">◉</div>
- <div>
-  <h1>CamBond</h1>
-  <small>Connect with permission.</small>
- </div>
-</header>
+<div class="card">
+<h3>Share Your Camera</h3>
+<p class="small">Start your camera and share your ID with the person you trust.</p>
+<button id="start">Start Camera & Share</button>
+<p>Your Connection ID:</p>
+<input id="myId" readonly placeholder="Your ID will appear here">
+<button id="copy">Copy My ID</button>
+<video id="localVideo" autoplay muted playsinline></video>
+</div>
 
-<section class="hero">
- <h2>Your Camera,<br>Your Control.</h2>
- <p>Connect with people you trust.
- Share live video securely with your permission.</p>
- <div class="status">● Privacy First</div>
-</section>
+<div class="card">
+<h3>Connect to Another Phone</h3>
+<input id="remoteId" placeholder="Enter the other phone's ID">
+<button id="connect">Connect</button>
+<video id="remoteVideo" autoplay playsinline controls></video>
+</div>
 
-<section class="card">
- <h3>📹 Camera Sharing</h3>
- <p>Start a camera preview on this device.</p>
- <button onclick="startCamera()">Start Camera</button>
- <video id="preview" autoplay playsinline muted></video>
- <button class="secondary" onclick="stopCamera()">Stop Camera</button>
- <p id="cameraStatus" class="status">Camera is OFF</p>
-</section>
-
-<section class="card">
- <h3>🔐 My Connections</h3>
- <p>Manage your trusted connections.</p>
- <button class="secondary" onclick="alert('Connection system will be added next.')">
- Manage Connections
- </button>
-</section>
-
-<section class="card">
- <h3>🛡️ Security Center</h3>
- <p>Permission, privacy and access history.</p>
- <div class="status">● Your privacy matters</div>
-</section>
-
-<footer>
- CamBond © 2026<br>
- Privacy • Permission • Security
-</footer>
+<div class="card">
+<button id="stop" style="background:#ff647c">Stop / Disconnect</button>
+<p class="status" id="status">Ready</p>
+<p class="small">Camera sharing requires the camera owner's permission. The owner can stop sharing at any time.</p>
+</div>
+</div>
 
 <script>
-let stream=null;
+let peer=null;
+let localStream=null;
+let activeCall=null;
 
-async function startCamera(){
- try{
-  stream=await navigator.mediaDevices.getUserMedia({
-   video:true,audio:false
-  });
-  const video=document.getElementById("preview");
-  video.srcObject=stream;
-  video.style.display="block";
-  document.getElementById("cameraStatus").textContent=
-   "● Camera is ON — local preview only";
- }catch(error){
-  document.getElementById("cameraStatus").textContent=
-   "Camera permission denied or unavailable.";
- }
+const statusText=document.getElementById("status");
+const localVideo=document.getElementById("localVideo");
+const remoteVideo=document.getElementById("remoteVideo");
+const myId=document.getElementById("myId");
+
+function status(msg){
+  statusText.textContent=msg;
 }
 
-function stopCamera(){
- if(stream){
-  stream.getTracks().forEach(track=>track.stop());
-  stream=null;
- }
- const video=document.getElementById("preview");
- video.srcObject=null;
- video.style.display="none";
- document.getElementById("cameraStatus").textContent="Camera is OFF";
+function showRemote(stream){
+  remoteVideo.srcObject=stream;
+  remoteVideo.play().catch(()=>{});
+  status("Live connection established!");
 }
+
+document.getElementById("start").onclick=async()=>{
+  try{
+    if(peer) peer.destroy();
+    status("Requesting camera permission...");
+    localStream=await navigator.mediaDevices.getUserMedia({
+      video:true,audio:true 
+    });
+    localVideo.srcObject=localStream;
+
+    peer=new Peer();
+
+    peer.on("open",id=>{
+      myId.value=id;
+      status("Camera ready. Share your ID.");
+    });
+
+    peer.on("call",call=>{
+      const accepted=confirm(
+        "Someone wants to view your camera. Allow this connection?"
+      );
+      if(!accepted){
+        call.close();
+        status("Connection declined.");
+        return;
+      }
+      activeCall=call;
+      call.answer(localStream);
+      call.on("stream",showRemote);
+      call.on("close",()=>status("Connection ended."));
+      call.on("error",e=>status("Call error: "+e.message));
+      status("You accepted the connection.");
+    });
+
+    peer.on("error",e=>status("Connection error: "+e.type));
+  }catch(e){
+    status("Camera error: "+e.message);
+  }
+};
+
+document.getElementById("connect").onclick=async()=>{
+  const id=document.getElementById("remoteId").value.trim();
+  if(!id){status("Enter the other phone's ID.");return;}
+  try{
+    if(peer) peer.destroy();
+    status("Requesting your camera permission...");
+    localStream=await navigator.mediaDevices.getUserMedia({
+      video:true,audio:false
+    });
+    localVideo.srcObject=localStream;
+
+    peer=new Peer();
+    peer.on("open",()=>{
+      status("Calling the other phone...");
+      activeCall=peer.call(id,localStream);
+      if(!activeCall){
+        status("Could not start call.");
+        return;
+      }
+      activeCall.on("stream",showRemote);
+      activeCall.on("close",()=>status("Connection ended."));
+      activeCall.on("error",e=>status("Call error: "+e.message));
+    });
+    peer.on("error",e=>status("Connection error: "+e.type));
+  }catch(e){
+    status("Camera or connection error: "+e.message);
+  }
+};
+
+document.getElementById("copy").onclick=async()=>{
+  if(!myId.value){status("Start your camera first.");return;}
+  try{
+    await navigator.clipboard.writeText(myId.value);
+    status("Connection ID copied!");
+  }catch(e){
+    myId.select();
+    status("Select and copy your ID.");
+  }
+};
+
+document.getElementById("stop").onclick=()=>{
+  if(activeCall){activeCall.close();activeCall=null;}
+  if(peer){peer.destroy();peer=null;}
+  if(localStream){
+    localStream.getTracks().forEach(track=>track.stop());
+    localStream=null;
+  }
+  localVideo.srcObject=null;
+  remoteVideo.srcObject=null;
+  myId.value="";
+  status("Sharing stopped. Camera disconnected.");
+};
 </script>
-
 </body>
 </html>
