@@ -3,743 +3,484 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CamBond</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d18">
+<title>CamBond — Private Camera Sharing</title>
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
-
 <style>
-
-* {
-  box-sizing: border-box;
+:root{
+--bg:#080d18;--panel:#142238;--teal:#65f3cf;
+--muted:#96a8bf;--white:#f4f8ff;--red:#ff647c;
+--border:rgba(154,184,218,.16)
 }
-
-:root {
-  --bg: #080d18;
-  --card: rgba(19, 29, 46, 0.82);
-  --border: rgba(126, 157, 190, 0.16);
-  --teal: #63f5cf;
-  --text: #f4f8ff;
-  --muted: #91a2ba;
+*{box-sizing:border-box}
+body{
+margin:0;min-height:100vh;padding:20px 14px 40px;
+font-family:Arial,sans-serif;color:var(--white);
+background:radial-gradient(ellipse at 10% 0%,#153d45,transparent 35%),
+radial-gradient(ellipse at 100% 40%,#192746,transparent 38%),var(--bg)
 }
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  padding: 24px 17px 40px;
-  color: var(--text);
-  font-family: Inter, Arial, sans-serif;
-  background:
-    radial-gradient(ellipse at 15% 0%, #153c46 0%, transparent 35%),
-    radial-gradient(ellipse at 100% 35%, #172447 0%, transparent 38%),
-    var(--bg);
+.container{max-width:490px;margin:auto}
+header{text-align:center;padding:18px 0 25px}
+.logo{
+width:58px;height:58px;margin:auto;border-radius:19px;
+display:grid;place-items:center;font-size:28px;
+color:#071c19;background:linear-gradient(140deg,#83ffe0,#39c9a8);
+box-shadow:0 0 35px #65f3cf35
 }
-
-.container {
-  max-width: 480px;
-  margin: auto;
+h1{font-size:36px;letter-spacing:1px;color:var(--teal);margin:12px 0 5px}
+.subtitle{font-size:12px;letter-spacing:1px;color:var(--muted)}
+.pill,.tag{
+display:inline-flex;align-items:center;gap:7px;
+padding:7px 11px;border-radius:30px;font-size:10px;
+color:var(--teal);background:#65f3cf12;border:1px solid #65f3cf30
 }
-
-h1 {
-  text-align: center;
-  font-size: 39px;
-  letter-spacing: 1.5px;
-  font-weight: 850;
-  margin: 18px 0 5px;
-  color: var(--teal);
-  text-shadow: 0 0 28px rgba(99,245,207,.25);
+.pill{margin-top:13px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 9px var(--teal)}
+.card{
+padding:20px;margin:16px 0;border-radius:22px;
+background:linear-gradient(145deg,#17263aee,#101a2bee);
+border:1px solid var(--border);box-shadow:0 15px 40px #0003;
+backdrop-filter:blur(16px)
 }
-
-.sub {
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-  letter-spacing: 1.2px;
-  margin: 8px 0 30px;
-}
-
-.card {
-  position: relative;
-  overflow: hidden;
-  padding: 23px 19px;
-  margin: 18px 0;
-  border-radius: 22px;
-  background: linear-gradient(
-    145deg,
-    rgba(28, 43, 65, .92),
-    rgba(13, 21, 36, .95)
-  );
-  border: 1px solid var(--border);
-  box-shadow:
-    0 15px 40px rgba(0,0,0,.24),
-    inset 0 1px 0 rgba(255,255,255,.035);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  width: 120px;
-  height: 120px;
-  right: -65px;
-  top: -65px;
-  border-radius: 50%;
-  background: rgba(99,245,207,.08);
-  filter: blur(12px);
-  pointer-events: none;
-}
-
-h3 {
-  font-size: 19px;
-  margin: 0 0 12px;
-  letter-spacing: .3px;
-}
-
-.card p {
-  line-height: 1.65;
-}
-
-.small {
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.7;
-}
-
-button {
-  position: relative;
-  width: 100%;
-  min-height: 49px;
-  padding: 14px 16px;
-  margin-top: 12px;
-  border: 1px solid rgba(99,245,207,.3);
-  border-radius: 13px;
-  background: linear-gradient(135deg, #75f8d5, #37cba9);
-  color: #071a19;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: .25px;
-  cursor: pointer;
-  box-shadow: 0 7px 22px rgba(56,220,183,.13);
-  transition: transform .2s, filter .2s, box-shadow .2s;
-}
-
-button:active {
-  transform: scale(.98);
-}
-
-button:hover {
-  filter: brightness(1.07);
-  box-shadow: 0 9px 27px rgba(56,220,183,.2);
-}
-
-button:disabled {
-  opacity: .4;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.secondary {
-  background: linear-gradient(135deg, #344965, #25354d);
-  color: #e6f2ff;
-  border-color: rgba(160,190,220,.2);
-  box-shadow: none;
-}
-
-.danger {
-  background: linear-gradient(135deg, #ff7588, #e84d70);
-  color: white;
-  border-color: rgba(255,120,145,.3);
-  box-shadow: 0 7px 22px rgba(232,77,112,.14);
-}
-
-input {
-  display: block;
-  width: 100%;
-  min-height: 49px;
-  margin-top: 10px;
-  padding: 14px;
-  color: white;
-  background: rgba(5, 12, 24, .72);
-  border: 1px solid rgba(133,165,200,.22);
-  border-radius: 12px;
-  outline: none;
-  font-size: 14px;
-  transition: border .2s, box-shadow .2s;
-}
-
-input:focus {
-  border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(99,245,207,.09);
-}
-
-input::placeholder {
-  color: #71839c;
-}
-
-video {
-  display: block;
-  width: 100%;
-  min-height: 190px;
-  margin-top: 15px;
-  border-radius: 16px;
-  background: #03070e;
-  border: 1px solid var(--border);
-  object-fit: contain;
-}
-
-.status {
-  min-height: 25px;
-  padding: 11px;
-  margin-top: 14px;
-  text-align: center;
-  color: var(--teal);
-  background: rgba(99,245,207,.055);
-  border: 1px solid rgba(99,245,207,.12);
-  border-radius: 11px;
-  font-size: 13px;
-}
-
-#ownerState {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(99,245,207,.055);
-  border: 1px solid rgba(99,245,207,.1);
-}
-
-.card > p:not(.small) {
-  color: #dbe7f4;
-  font-size: 13px;
-}
-
-@media (max-width: 380px) {
-  body {
-    padding: 15px 12px 30px;
-  }
-
-  h1 {
-    font-size: 34px;
-  }
-
-  .card {
-    padding: 19px 15px;
-  }
-}
-
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+h2{font-size:17px;margin:0}
+.desc{font-size:12px;line-height:1.7;color:var(--muted)}
+.preview{position:relative;overflow:hidden;background:#03070e;border:1px solid var(--border);border-radius:17px;margin:14px 0;min-height:190px}
+video{display:block;width:100%;max-height:380px;aspect-ratio:4/3;object-fit:contain;background:#03070e}
+.preview-label{position:absolute;z-index:2;top:12px;left:12px;padding:7px 10px;border-radius:30px;background:#07121ddd;font-size:10px;letter-spacing:.6px}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff526e;box-shadow:0 0 9px #ff526e;margin-right:6px}
+.placeholder{min-height:190px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#70849f;font-size:12px;text-align:center;padding:20px}
+.symbol{font-size:36px;opacity:.7}
+label{display:block;color:#c9d6e8;font-size:12px;margin:13px 0 6px}
+input{width:100%;padding:14px;border-radius:12px;outline:none;color:white;background:#07111f;border:1px solid var(--border);font-size:14px}
+input:focus{border-color:var(--teal)}
+button{width:100%;min-height:46px;padding:12px;border:0;border-radius:12px;margin-top:10px;background:linear-gradient(135deg,#7dffe0,#39c9a8);color:#071c19;font-size:13px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:active{transform:scale(.98)}
+.secondary{color:#e5efff;background:linear-gradient(135deg,#354c6b,#24364e);border:1px solid #ffffff14}
+.outline{color:var(--teal);background:#65f3cf0d;border:1px solid #65f3cf40}
+.danger{color:white;background:linear-gradient(135deg,#ff7b90,#e74d70)}
+.control-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.control-grid button{margin-top:8px;font-size:12px}
+.id-box{padding:13px;border:1px dashed #65f3cf55;background:#07111f;border-radius:12px;color:var(--teal);font-size:12px;overflow-wrap:anywhere;min-height:42px}
+.info{margin-top:12px;padding:12px;border-radius:12px;background:#65f3cf09;border:1px solid #65f3cf20;color:var(--teal);font-size:12px;line-height:1.6}
+.status{min-height:45px;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;border-radius:12px;border:1px solid #65f3cf20;background:#65f3cf09;color:var(--teal);font-size:12px;line-height:1.5}
+.request{display:none;margin-top:14px;padding:14px;border:1px solid #65f3cf55;background:#65f3cf0c;border-radius:15px}
+.request p{font-size:12px;line-height:1.6;color:#d6e7f0}
+.footer{text-align:center;color:#73849c;font-size:11px;line-height:1.8;padding:16px 5px}
+.hidden{display:none!important}
+@media(max-width:360px){body{padding:13px 10px}.card{padding:16px}h1{font-size:32px}}
 </style>
 </head>
-
 <body>
 <div class="container">
 
+<header>
+<div class="logo">◉</div>
 <h1>CamBond</h1>
-<p class="sub">One-way Live Audio + Video Sharing</p>
+<div class="subtitle">PRIVATE LIVE CAMERA SHARING</div>
+<div class="pill"><span class="dot"></span> ONE-WAY AUDIO + VIDEO</div>
+</header>
 
-<div class="card">
-<h3>Camera Owner</h3>
-<p class="small">
-Start sharing your camera and microphone.
-Another person must request and receive your approval.
-</p>
+<section class="card">
+<div class="card-head"><h2>◉ Camera Owner</h2><span class="tag">OWNER</span></div>
+<p class="desc">Start your camera and microphone. Share your ID with someone you trust. You must approve every viewing request.</p>
 
-<button id="start">Start Camera Sharing</button>
-
-<p>Your Connection ID:</p>
-<input id="myId" readonly placeholder="Your ID will appear here">
-
-<button id="copy">Copy My ID</button>
-
-<p class="small" id="ownerState">
-Camera sharing is OFF.
-</p>
+<div class="preview">
+<div class="preview-label"><span class="live-dot"></span> YOUR CAMERA</div>
+<video id="ownerVideo" autoplay playsinline muted class="hidden"></video>
+<div class="placeholder" id="ownerPlaceholder"><div class="symbol">◉</div>Your camera preview will appear here</div>
 </div>
 
-<div class="card">
-<h3>Viewer</h3>
+<button id="startBtn">START CAMERA SHARING</button>
+<label>Your Connection ID</label>
+<div class="id-box" id="myId">Not started yet</div>
+<button class="outline" id="copyBtn" disabled>COPY CONNECTION ID</button>
 
-<p class="small">
-Enter the Camera Owner's ID.
-Your own camera and microphone will not be opened.
-</p>
-
-<input id="remoteId" placeholder="Enter Camera Owner ID">
-
-<button id="connect">Connect to Camera</button>
-
-<button id="switch" class="secondary" disabled>
-Request Front / Back Camera Switch
-</button>
-
-<video id="remoteVideo" autoplay playsinline controls></video>
-
-<p class="small">
-If audio does not start automatically, press Play on the video.
-</p>
+<div class="control-grid">
+<button class="secondary" id="cameraBtn" disabled>Camera: ON</button>
+<button class="secondary" id="micBtn" disabled>Mic: ON</button>
+<button class="secondary" id="flipBtn" disabled>⇄ Switch Camera</button>
 </div>
 
-<div class="card">
-<button id="stop" class="danger">
-Stop / Disconnect
-</button>
+<div class="request" id="requestBox">
+<strong>Incoming viewing request</strong>
+<p>Someone wants to view and hear your camera. Do you approve?</p>
+<button id="acceptBtn">ACCEPT REQUEST</button>
+<button class="danger" id="rejectBtn">REJECT REQUEST</button>
+</div>
+<div class="info" id="ownerInfo">Camera and microphone are currently OFF.</div>
+</section>
 
-<p class="status" id="status">Ready</p>
+<section class="card">
+<div class="card-head"><h2>▷ Viewer</h2><span class="tag">VIEW ONLY</span></div>
+<p class="desc">Enter the Camera Owner's Connection ID. Your own camera and microphone will not be opened.</p>
+<label>Camera Owner ID</label>
+<input id="remoteId" placeholder="Paste connection ID here" autocomplete="off">
+<button id="connectBtn">CONNECT TO CAMERA</button>
 
-<p class="small">
-Camera and microphone sharing require the owner's permission.
-The owner can stop sharing at any time.
-Camera use remains visible through the phone's system privacy indicators.
-</p>
+<div class="preview">
+<div class="preview-label"><span class="live-dot"></span> OWNER LIVE FEED</div>
+<video id="remoteVideo" autoplay playsinline class="hidden"></video>
+<div class="placeholder" id="remotePlaceholder"><div class="symbol">▷</div>Waiting for live connection...</div>
 </div>
 
+<div class="control-grid">
+<button class="secondary" id="volumeBtn" disabled>Sound: ON</button>
+<button class="secondary" id="fullscreenBtn" disabled>⛶ Fullscreen</button>
+</div>
+<p class="desc">If playback is blocked, tap Play on the video.</p>
+</section>
+
+<section class="card">
+<div class="card-head"><h2>Connection Status</h2><span class="tag">SYSTEM</span></div>
+<div class="status"><span id="statusText">Ready to start</span></div>
+<button class="danger" id="stopBtn">STOP / DISCONNECT</button>
+</section>
+
+<div class="footer">
+CamBond · Private One-way Camera Sharing<br>
+Camera and microphone require owner's permission.<br>
+Owner can stop sharing at any time.
+</div>
 </div>
 
 <script>
-let peer = null;
-let localStream = null;
+let peer=null;
+let localStream=null;
+let viewerConnection=null;
+let viewerCall=null;
+let pendingConnection=null;
+let activeConnection=null;
+let activeCall=null;
+let facing="user";
+let cameraEnabled=true;
+let micEnabled=true;
+let busy=false;
 
-let activeCalls = new Map();
-let dataConnections = new Map();
+const $=id=>document.getElementById(id);
+const ownerVideo=$("ownerVideo");
+const remoteVideo=$("remoteVideo");
 
-let viewerConnection = null;
-let viewerCall = null;
-
-let facing = "user";
-let role = null;
-let switching = false;
-
-const statusText = document.getElementById("status");
-const ownerState = document.getElementById("ownerState");
-const myId = document.getElementById("myId");
-const remoteVideo = document.getElementById("remoteVideo");
-const switchButton = document.getElementById("switch");
-
-const startButton = document.getElementById("start");
-const connectButton = document.getElementById("connect");
-
-function status(message){
-  statusText.textContent = message;
+function status(message){$("statusText").textContent=message}
+function ownerPreview(show){
+ ownerVideo.classList.toggle("hidden",!show);
+ $("ownerPlaceholder").classList.toggle("hidden",show);
+}
+function remotePreview(show){
+ remoteVideo.classList.toggle("hidden",!show);
+ $("remotePlaceholder").classList.toggle("hidden",show);
+}
+function ownerInfo(message){$("ownerInfo").textContent=message}
+function updateControls(){
+ $("cameraBtn").textContent=cameraEnabled?"Camera: ON":"Camera: OFF";
+ $("micBtn").textContent=micEnabled?"Mic: ON":"Mic: OFF";
+}
+function closeCall(call){
+ if(call){try{call.close()}catch(e){}}
+}
+function resetUI(){
+ $("startBtn").disabled=false;
+ $("connectBtn").disabled=false;
+ $("copyBtn").disabled=true;
+ $("cameraBtn").disabled=true;
+ $("micBtn").disabled=true;
+ $("flipBtn").disabled=true;
+ $("volumeBtn").disabled=true;
+ $("fullscreenBtn").disabled=true;
+ $("requestBox").style.display="none";
+}
+function stopTracks(stream){
+ if(stream)stream.getTracks().forEach(t=>t.stop());
 }
 
-function updateOwnerState(){
-  ownerState.textContent =
-    "Camera Sharing ACTIVE — " +
-    (facing === "user" ? "Front Camera" : "Back Camera") +
-    " + Microphone ON";
-}
-
-function sendToViewers(message){
-  dataConnections.forEach(conn=>{
-    if(conn.open){
-      try{
-        conn.send(message);
-      }catch(e){}
-    }
+async function startOwner(){
+ if(peer){status("Stop the current session first.");return}
+ if(!navigator.mediaDevices?.getUserMedia){
+  status("Camera requires HTTPS and a supported browser.");return;
+ }
+ $("startBtn").disabled=true;
+ status("Requesting camera and microphone permission...");
+ try{
+  localStream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:{ideal:"user"},width:{ideal:1280},height:{ideal:720}},
+   audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
   });
+  ownerVideo.srcObject=localStream;
+  ownerVideo.play().catch(()=>{});
+  ownerPreview(true);
+  facing="user";cameraEnabled=true;micEnabled=true;
+  updateControls();
+  ownerInfo("Camera and microphone are active.");
+  peer=new Peer();
+
+  peer.on("open",id=>{
+   $("myId").textContent=id;
+   $("copyBtn").disabled=false;
+   $("cameraBtn").disabled=false;
+   $("micBtn").disabled=false;
+   $("flipBtn").disabled=false;
+   status("Camera ready. Share your Connection ID.");
+  });
+
+  peer.on("connection",conn=>{
+   if(pendingConnection||activeConnection){
+    conn.on("open",()=>{try{conn.send({type:"busy"})}catch(e){}conn.close()});
+    return;
+   }
+   pendingConnection=conn;
+   conn.on("open",()=>{
+    $("requestBox").style.display="block";
+    status("Someone is requesting camera access.");
+   });
+   conn.on("close",()=>{
+    if(pendingConnection===conn){
+     pendingConnection=null;
+     $("requestBox").style.display="none";
+    }
+    if(activeConnection===conn){
+     activeConnection=null;
+     closeCall(activeCall);
+     activeCall=null;
+     status("Viewer disconnected.");
+    }
+   });
+   conn.on("error",()=>status("Viewer connection error."));
+  });
+
+  peer.on("error",e=>status("Peer error: "+e.type));
+  peer.on("disconnected",()=>status("Signaling server disconnected."));
+ }catch(e){
+  status("Camera error: "+e.message);
+  stopTracks(localStream);localStream=null;
+  ownerVideo.srcObject=null;ownerPreview(false);
+  $("startBtn").disabled=false;
+ }
 }
 
-async function openOwnerCamera(mode){
-  if(switching) return;
+async function acceptRequest(){
+ const conn=pendingConnection;
+ if(!conn||!conn.open||!peer||!localStream){
+  status("Request is no longer available.");return;
+ }
+ $("acceptBtn").disabled=true;
+ $("rejectBtn").disabled=true;
+ try{
+  const call=peer.call(conn.peer,localStream);
+  if(!call)throw new Error("Could not create media connection.");
+  activeConnection=conn;activeCall=call;pendingConnection=null;
+  $("requestBox").style.display="none";
+  conn.send({type:"accepted"});
+  call.on("close",()=>{
+   if(activeCall===call){
+    activeCall=null;activeConnection=null;
+    status("Live sharing ended.");
+   }
+  });
+  call.on("error",e=>status("Media error: "+e.message));
+  status("Approved. Sharing audio and video.");
+ }catch(e){
+  status("Could not start sharing: "+e.message);
+  activeConnection=null;activeCall=null;
+  pendingConnection=conn;
+ }finally{
+  $("acceptBtn").disabled=false;
+  $("rejectBtn").disabled=false;
+ }
+}
 
-  switching = true;
-  let newStream = null;
+function rejectRequest(){
+ const conn=pendingConnection;
+ if(conn){try{conn.send({type:"rejected"})}catch(e){}conn.close()}
+ pendingConnection=null;
+ $("requestBox").style.display="none";
+ status("Viewing request rejected.");
+}
 
-  try{
-    status("Switching camera...");
+async function replaceVideoTrack(track){
+ const senders=[];
+ const calls=[activeCall].filter(Boolean);
+ for(const call of calls){
+  const pc=call.peerConnection;
+  if(!pc)throw new Error("Media connection not ready.");
+  const sender=pc.getSenders().find(s=>s.track?.kind==="video");
+  if(!sender)throw new Error("Video sender not found.");
+  await sender.replaceTrack(track);
+  senders.push(sender);
+ }
+ return senders;
+}
 
-    // Get only a new video track.
-    // Existing microphone remains active.
-    newStream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:mode}
-      },
-      audio:false
-    });
+async function switchCamera(){
+ if(!localStream||busy)return;
+ busy=true;
+ let temp=null;
+ try{
+  const next=facing==="user"?"environment":"user";
+  status("Switching camera...");
+  temp=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:{ideal:next}},audio:false
+  });
+  const track=temp.getVideoTracks()[0];
+  const oldTrack=localStream.getVideoTracks()[0];
+  if(!track)throw new Error("New camera unavailable.");
+  await replaceVideoTrack(track);
+  localStream.removeTrack(oldTrack);
+  localStream.addTrack(track);
+  oldTrack.stop();
+  facing=next;
+  ownerVideo.srcObject=localStream;
+  ownerInfo("Camera switched to "+(next==="user"?"front":"back")+". Microphone remains active.");
+  status("Camera switched successfully.");
+  temp=null;
+ }catch(e){
+  status("Camera switch failed: "+e.message);
+ }finally{
+  if(temp)stopTracks(temp);
+  busy=false;
+ }
+}
 
-    const newTrack = newStream.getVideoTracks()[0];
+async function toggleCamera(){
+ if(!localStream)return;
+ const track=localStream.getVideoTracks()[0];
+ if(!track)return;
+ if(cameraEnabled){
+  track.enabled=false;
+  cameraEnabled=false;
+  ownerInfo("Camera is OFF. Microphone status is unchanged.");
+ }else{
+  track.enabled=true;
+  cameraEnabled=true;
+  ownerInfo("Camera is ON.");
+ }
+ updateControls();
+}
+function toggleMic(){
+ if(!localStream)return;
+ const track=localStream.getAudioTracks()[0];
+ if(!track)return;
+ track.enabled=!track.enabled;
+ micEnabled=track.enabled;
+ ownerInfo("Camera: "+(cameraEnabled?"ON":"OFF")+" · Microphone: "+(micEnabled?"ON":"OFF"));
+ updateControls();
+}
 
-    if(!newTrack){
-      throw new Error("New video track not found.");
-    }
+function connectViewer(){
+ const id=$("remoteId").value.trim();
+ if(!id){status("Enter the Camera Owner ID.");return}
+ if(peer){status("Stop the current session first.");return}
+ $("connectBtn").disabled=true;
+ status("Connecting to Camera Owner...");
+ peer=new Peer();
 
-    const oldTrack = localStream.getVideoTracks()[0];
+ peer.on("open",()=>{
+  viewerConnection=peer.connect(id,{reliable:true});
+  viewerConnection.on("open",()=>status("Request sent. Waiting for owner's approval."));
+  viewerConnection.on("data",msg=>{
+   if(!msg)return;
+   if(msg.type==="rejected")status("Owner rejected your request.");
+   if(msg.type==="busy")status("Owner is already sharing with someone.");
+   if(msg.type==="accepted")status("Owner approved. Establishing media connection...");
+  });
+  viewerConnection.on("close",()=>{
+   if(viewerCall){closeCall(viewerCall);viewerCall=null}
+   remoteVideo.srcObject=null;remotePreview(false);
+   $("volumeBtn").disabled=true;$("fullscreenBtn").disabled=true;
+   status("Owner disconnected.");
+  });
+  viewerConnection.on("error",e=>status("Connection error: "+e.message));
+ });
 
-    const replacedSenders = [];
+ peer.on("call",call=>{
+  viewerCall=call;
+  // No local stream is requested or sent by viewer.
+  call.answer();
+  call.on("stream",stream=>{
+   remoteVideo.srcObject=stream;
+   remoteVideo.muted=false;
+   remotePreview(true);
+   remoteVideo.play().then(()=>{
+    status("Live audio and video connected.");
+   }).catch(()=>{
+    status("Connected. Tap Play to start audio and video.");
+   });
+   $("volumeBtn").disabled=false;
+   $("fullscreenBtn").disabled=false;
+  });
+  call.on("close",()=>{
+   remoteVideo.srcObject=null;remotePreview(false);
+   $("volumeBtn").disabled=true;$("fullscreenBtn").disabled=true;
+   status("Live camera sharing ended.");
+  });
+  call.on("error",e=>status("Media error: "+e.message));
+ });
 
-    try{
-      for(const call of activeCalls.values()){
-        const pc = call.peerConnection;
-
-        if(!pc){
-          throw new Error("Connection is not ready.");
-        }
-
-        const sender = pc.getSenders().find(s=>
-          s.track && s.track.kind === "video"
-        );
-
-        if(!sender){
-          throw new Error("Video sender not found.");
-        }
-
-        await sender.replaceTrack(newTrack);
-
-        replacedSenders.push(sender);
-      }
-    }catch(error){
-      // Restore previous camera if any replacement fails.
-      for(const sender of replacedSenders){
-        try{
-          await sender.replaceTrack(oldTrack);
-        }catch(e){}
-      }
-
-      throw error;
-    }
-
-    // Keep the existing microphone track.
-    const audioTracks = localStream.getAudioTracks();
-
-    localStream = new MediaStream([
-      newTrack,
-      ...audioTracks
-    ]);
-
-    if(oldTrack){
-      oldTrack.stop();
-    }
-
-    facing = mode;
-    updateOwnerState();
-
-    sendToViewers({
-      type:"camera-changed",
-      camera:facing
-    });
-
-    status("Camera switched successfully.");
-
-  }catch(error){
-    status("Camera switch failed: " + error.message);
-
-    if(newStream){
-      newStream.getTracks().forEach(track=>track.stop());
-    }
-  }finally{
-    switching = false;
-  }
+ peer.on("error",e=>{
+  status("Connection error: "+e.type);
+ });
 }
 
 function stopEverything(){
-  if(viewerCall){
-    viewerCall.close();
-    viewerCall = null;
-  }
-
-  if(viewerConnection){
-    viewerConnection.close();
-    viewerConnection = null;
-  }
-
-  activeCalls.forEach(call=>{
-    try{call.close()}catch(e){}
-  });
-  activeCalls.clear();
-
-  dataConnections.forEach(conn=>{
-    try{conn.close()}catch(e){}
-  });
-  dataConnections.clear();
-
-  if(peer){
-    try{peer.destroy()}catch(e){}
-    peer = null;
-  }
-
-  if(localStream){
-    localStream.getTracks().forEach(track=>track.stop());
-    localStream = null;
-  }
-
-  remoteVideo.pause();
-  remoteVideo.srcObject = null;
-
-  myId.value = "";
-  switchButton.disabled = true;
-
-  ownerState.textContent = "Camera sharing is OFF.";
-
-  startButton.disabled = false;
-  connectButton.disabled = false;
-
-  role = null;
-  facing = "user";
-  switching = false;
-
-  status("Disconnected. Camera and microphone stopped.");
+ if(viewerCall){closeCall(viewerCall);viewerCall=null}
+ if(viewerConnection){closeCall(viewerConnection);viewerConnection=null}
+ if(pendingConnection){closeCall(pendingConnection);pendingConnection=null}
+ if(activeCall){closeCall(activeCall);activeCall=null}
+ if(activeConnection){closeCall(activeConnection);activeConnection=null}
+ if(peer){try{peer.destroy()}catch(e){}peer=null}
+ stopTracks(localStream);localStream=null;
+ ownerVideo.srcObject=null;remoteVideo.srcObject=null;
+ ownerPreview(false);remotePreview(false);
+ $("myId").textContent="Not started yet";
+ $("remoteId").value="";
+ facing="user";cameraEnabled=true;micEnabled=true;
+ $("requestBox").style.display="none";
+ ownerInfo("Camera and microphone are currently OFF.");
+ updateControls();resetUI();
+ status("Disconnected. All local media stopped.");
 }
 
-// OWNER START
-startButton.onclick = async()=>{
-  if(peer || role){
-    status("Stop the current session first.");
-    return;
-  }
+$("startBtn").onclick=startOwner;
+$("acceptBtn").onclick=acceptRequest;
+$("rejectBtn").onclick=rejectRequest;
+$("connectBtn").onclick=connectViewer;
+$("cameraBtn").onclick=toggleCamera;
+$("micBtn").onclick=toggleMic;
+$("flipBtn").onclick=switchCamera;
+$("stopBtn").onclick=stopEverything;
 
-  try{
-    role = "owner";
-    startButton.disabled = true;
-
-    status("Requesting camera and microphone permission...");
-
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:"user"}
-      },
-      audio:{
-        echoCancellation:true,
-        noiseSuppression:true,
-        autoGainControl:true
-      }
-    });
-
-    facing = "user";
-    updateOwnerState();
-
-    peer = new Peer();
-
-    peer.on("open",id=>{
-      myId.value = id;
-      status("Camera and microphone ready. Share your ID.");
-    });
-
-    peer.on("connection",conn=>{
-
-      conn.on("open",()=>{
-        if(role !== "owner"){
-          conn.close();
-          return;
-        }
-
-        const accepted = confirm(
-          "Someone wants to view your camera and hear audio. Accept?"
-        );
-
-        if(!accepted){
-          try{
-            conn.send({type:"rejected"});
-          }catch(e){}
-
-          conn.close();
-          status("Connection request rejected.");
-          return;
-        }
-
-        dataConnections.set(conn.peer,conn);
-
-        conn.on("data",async message=>{
-          if(message && message.type === "switch-camera"){
-            const next =
-              facing === "user" ? "environment" : "user";
-
-            await openOwnerCamera(next);
-          }
-        });
-
-        conn.on("close",()=>{
-          dataConnections.delete(conn.peer);
-
-          const call = activeCalls.get(conn.peer);
-
-          if(call){
-            call.close();
-            activeCalls.delete(conn.peer);
-          }
-
-          status("A viewer disconnected.");
-        });
-
-        conn.on("error",error=>{
-          status("Viewer connection error: " + error.message);
-        });
-
-        // Send owner's camera and microphone.
-        const call = peer.call(conn.peer,localStream);
-
-        if(call){
-          activeCalls.set(conn.peer,call);
-
-          call.on("close",()=>{
-            activeCalls.delete(conn.peer);
-            status("Viewer call ended.");
-          });
-
-          call.on("error",error=>{
-            status("Call error: " + error.message);
-          });
-
-          status("Viewer accepted. Sharing audio and video.");
-        }
-      });
-
-      conn.on("error",error=>{
-        status("Data connection error: " + error.message);
-      });
-    });
-
-    peer.on("error",error=>{
-      status("Connection error: " + error.type);
-    });
-
-    peer.on("disconnected",()=>{
-      status("Signaling server disconnected.");
-    });
-
-  }catch(error){
-    status("Camera/Microphone error: " + error.message);
-
-    if(localStream){
-      localStream.getTracks().forEach(track=>track.stop());
-      localStream = null;
-    }
-
-    if(peer){
-      peer.destroy();
-      peer = null;
-    }
-
-    role = null;
-    startButton.disabled = false;
-    ownerState.textContent = "Camera sharing is OFF.";
-  }
+$("copyBtn").onclick=async()=>{
+ const id=$("myId").textContent;
+ if(!id||id==="Not started yet")return;
+ try{
+  await navigator.clipboard.writeText(id);
+  status("Connection ID copied!");
+ }catch(e){
+  status("Copy unavailable. Select and copy the ID manually.");
+ }
 };
 
-// VIEWER CONNECT
-connectButton.onclick = ()=>{
-  const id = document.getElementById("remoteId").value.trim();
-
-  if(!id){
-    status("Enter the Camera Owner ID.");
-    return;
-  }
-
-  if(peer || role){
-    status("Stop the current session first.");
-    return;
-  }
-
-  if(!window.Peer){
-    status("PeerJS could not load. Check your internet.");
-    return;
-  }
-
-  role = "viewer";
-  connectButton.disabled = true;
-
-  status("Connecting to Camera Owner...");
-
-  peer = new Peer();
-
-  peer.on("open",()=>{
-    viewerConnection = peer.connect(id,{reliable:true});
-
-    viewerConnection.on("open",()=>{
-      status("Request sent. Waiting for owner's approval.");
-    });
-
-    viewerConnection.on("data",message=>{
-      if(!message) return;
-
-      if(message.type === "rejected"){
-        status("Owner rejected your request.");
-        switchButton.disabled = true;
-      }
-
-      if(message.type === "camera-changed"){
-        status(
-          "Owner switched to " +
-          (message.camera === "user" ? "Front" : "Back") +
-          " Camera."
-        );
-      }
-    });
-
-    viewerConnection.on("close",()=>{
-      status("Owner disconnected.");
-      switchButton.disabled = true;
-      remoteVideo.srcObject = null;
-    });
-
-    viewerConnection.on("error",error=>{
-      status("Connection error: " + error.message);
-    });
-  });
-
-  peer.on("call",call=>{
-    viewerCall = call;
-
-    // Answer without opening viewer's camera or microphone.
-    call.answer();
-
-    call.on("stream",stream=>{
-      remoteVideo.srcObject = stream;
-      remoteVideo.muted = false;
-
-      remoteVideo.play().then(()=>{
-        status("Live audio and video connected.");
-      }).catch(()=>{
-        status("Connected. Press Play to hear and watch.");
-      });
-
-      switchButton.disabled = false;
-    });
-
-    call.on("close",()=>{
-      remoteVideo.srcObject = null;
-      switchButton.disabled = true;
-      status("Live camera sharing ended.");
-    });
-
-    call.on("error",error=>{
-      status("Video/audio error: " + error.message);
-    });
-  });
-
-  peer.on("error",error=>{
-    status("Connection error: " + error.type);
-  });
+$("volumeBtn").onclick=()=>{
+ viewerMuted=!viewerMuted;
+ remoteVideo.muted=viewerMuted;
+ $("volumeBtn").textContent=viewerMuted?"Sound: OFF":"Sound: ON";
 };
 
-// VIEWER REQUESTS CAMERA SWITCH
-switchButton.onclick = ()=>{
-  if(viewerConnection && viewerConnection.open){
-    viewerConnection.send({
-      type:"switch-camera"
-    });
-
-    status("Camera switch request sent to owner.");
-  }else{
-    status("No active camera connection.");
-  }
+$("fullscreenBtn").onclick=async()=>{
+ try{
+  if(remoteVideo.requestFullscreen)await remoteVideo.requestFullscreen();
+  else if(remoteVideo.webkitEnterFullscreen)remoteVideo.webkitEnterFullscreen();
+ }catch(e){status("Fullscreen unavailable on this browser.")}
 };
 
-// COPY ID
-document.getElementById("copy").onclick = async()=>{
-  if(!myId.value){
-    status("Start Camera Sharing first.");
-    return;
-  }
+remoteVideo.addEventListener("click",()=>{
+ if(remoteVideo.paused)remoteVideo.play().catch(()=>{});
+});
 
-  try{
-    await navigator.clipboard.writeText(myId.value);
-    status("Connection ID copied!");
-  }catch(error){
-    myId.select();
-    status("Select and copy your ID.");
-  }
-};
-
-// STOP
-document.getElementById("stop").onclick = stopEverything;
-
+resetUI();
+showOwnerPreview(false);
+showRemotePreview(false);
 </script>
 </body>
 </html>
