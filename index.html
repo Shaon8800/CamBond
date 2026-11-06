@@ -383,7 +383,7 @@ function startOwner() {
     });
 
   }).catch(error => {
-    status("Camera error: " + error.message);
+    status("Camera error (" + error.name + "): " + error.message);
     localStream = null;
     $("startBtn").disabled = false;
     ownerPreview(false);
